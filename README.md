@@ -1,6 +1,6 @@
 ## Smart Washing Machine Optimizer
 
-Team Name:Smart Spin
+Team Name: Smart Spin
 
 ## Team Members
 1. Aditya Tripathi
