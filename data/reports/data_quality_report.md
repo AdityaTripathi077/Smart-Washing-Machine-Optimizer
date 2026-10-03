@@ -12,6 +12,7 @@
 ## Data Fields
 
 The dataset contains:
+
 - scenario_id
 - dirt_score
 - load_kg
@@ -40,3 +41,15 @@ The scenarios were generated using a fixed random seed so that the dataset can b
 Processed dataset:
 
 `data/processed/scenarios.csv`
+
+## Fabric Distribution
+
+| Fabric Type | Count | Percentage |
+|---|---:|---:|
+| delicate | 2513 | 25.1% |
+| synthetic | 2511 | 25.1% |
+| heavy | 2508 | 25.1% |
+| cotton | 2468 | 24.7% |
+| Total | 10000 | 100% |
+
+The four fabric categories are reasonably balanced in the generated simulation data.
