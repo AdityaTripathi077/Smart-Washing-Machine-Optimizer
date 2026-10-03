@@ -58,6 +58,8 @@ A larger dataset of 10,000+ scenarios will be created in a later step.
 
 ## Sources and Assumptions
 
-The team will document the sources used for machine capacity and input ranges.
+The machine capacity source is documented above.
+
+The dirt_score, water_availability_pct, and fabric_type ranges are team-defined simulation assumptions.
 
 Any simulated or assumed values will be clearly marked.
