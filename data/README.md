@@ -39,22 +39,21 @@ Step 1 uses a small sample dataset.
 
 For this project, we use an 8 kg washing machine capacity.
 
-Machine: LG T80VBSF1Z
+Machine: LG T80VBSF1Z  
 Maximum wash capacity: 8.0 kg
 
-Source: LG India
+Source: LG India  
 https://www.lg.com/in/laundry/top-loading-washing-machines/t80vbsf1z/
 
 ## Simulation Assumptions
 
 The following fields are team-defined inputs for simulation:
+
 - dirt_score: 0–10
 - water_availability_pct: 0–100
 - fabric_type: delicate, cotton, synthetic, heavy
 
 These are simulation variables and are not claimed to be direct manufacturer sensor measurements.
-
-A larger dataset of 10,000+ scenarios will be created in a later step.
 
 ## Sources and Assumptions
 
@@ -63,3 +62,5 @@ The machine capacity source is documented above.
 The dirt_score, water_availability_pct, and fabric_type ranges are team-defined simulation assumptions.
 
 Any simulated or assumed values will be clearly marked.
+
+A larger dataset of 10,000+ scenarios is generated in Step 2 using reproducible simulation.
