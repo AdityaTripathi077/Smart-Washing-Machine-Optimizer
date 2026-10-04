@@ -64,3 +64,7 @@ The dirt_score, water_availability_pct, and fabric_type ranges are team-defined 
 Any simulated or assumed values will be clearly marked.
 
 A larger dataset of 10,000+ scenarios is generated in Step 2 using reproducible simulation.
+## Data Generation Process
+
+The Step 2 dataset is generated using Python with a fixed random seed.
+The generator creates 10,000 valid washing scenarios using the documented input ranges.
