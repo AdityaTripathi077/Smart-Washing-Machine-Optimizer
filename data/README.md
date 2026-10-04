@@ -42,3 +42,8 @@ A larger dataset of 10,000+ scenarios will be created in a later step.
 The team will document the sources used for machine capacity and input ranges.
 
 Any simulated or assumed values will be clearly marked.
+
+## Data Generation Process
+
+The Step 2 dataset is generated using Python with a fixed random seed.
+The generator creates 10,000 valid washing scenarios using the documented input ranges.
