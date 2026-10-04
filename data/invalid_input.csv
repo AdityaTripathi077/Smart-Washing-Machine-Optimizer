@@ -1,0 +1,2 @@
+scenario_id,dirt_score,load_kg,fabric_type,water_availability_pct
+INVALID-001,11,9,unknown,110
