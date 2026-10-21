@@ -43,6 +43,39 @@ Energy savings will not be claimed unless a defensible energy measure is defined
 ## Results
 Results will be added after the comparison script runs successfully.
 No improvement is claimed before evaluating the actual results.
+The baseline and fuzzy controller were evaluated on the same 10,000 synthetic scenarios.
+
+| Metric | Baseline Mean | Fuzzy Mean | Mean Difference |
+|---|---:|---:|---:|
+| Wash time (min) | 42.48 | 55.88 | +13.40 |
+| Water usage (litres) | 56.22 | 60.00 | +3.77 |
+| Detergent (ml) | 44.97 | 51.04 | +6.07 |
+| Spin speed (RPM) | 899.42 | 918.55 | +19.13 |
+
+The fuzzy controller produced higher average wash time, water usage, detergent usage, and spin speed than the fixed-preset baseline. Therefore, these results do not demonstrate resource savings.
+
+## Interpretation
+
+The current fuzzy controller takes approximately 13.40 additional minutes per scenario on average, uses 3.77 additional litres of water, and uses 6.07 additional ml of detergent compared with the baseline.
+
+These differences indicate that the current rules and membership functions require further tuning. Higher spin speed alone does not demonstrate better cleaning performance.
+
+## Limitations
+
+- The dataset contains synthetic scenarios and does not establish real-world washing performance.
+- The baseline uses fixed settings based on fabric type.
+- The fuzzy controller uses preliminary rules and temporary fallback behaviour when no output membership is activated.
+- Cleaning quality was not measured against an independent target.
+- Energy consumption was not modelled; no energy-saving claim is made.
+- Results should be reproduced after the fuzzy rules are improved.
+
+## Next Tuning Priorities
+
+1. Review wash-time rules and membership functions.
+2. Review water-use rules so recommendations account meaningfully for water availability.
+3. Review detergent rules to avoid excessive outputs.
+4. Validate delicate-fabric spin recommendations.
+5. Rerun the same 10,000 scenarios after any controller changes and compare results fairly.
 
 ## Interpretation
 To be completed using measured results, including where the fuzzy controller differs from or performs worse than the baseline.
