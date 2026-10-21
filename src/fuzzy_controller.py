@@ -154,17 +154,14 @@ def washing_controller(dirt_score, load_kg, fabric_type,
         np.minimum(water_medium_strength, water_usage_medium),
         np.minimum(water_high_strength, water_usage_high)
     ])
-
-    
-detergent_membership = np.maximum.reduce([
-    np.minimum(detergent_low_strength, detergent_low),
-    np.minimum(detergent_medium_strength, detergent_medium),
-    np.minimum(detergent_high_strength, detergent_high)
-])
-
-# Fallback when no detergent rule activates
-if np.sum(detergent_membership) == 0:
-    detergent_membership = detergent_medium.copy()
+    detergent_membership = np.maximum.reduce([
+        np.minimum(detergent_low_strength, detergent_low),
+        np.minimum(detergent_medium_strength, detergent_medium),
+        np.minimum(detergent_high_strength, detergent_high)
+    ])
+    # Fallback when no detergent rule activates
+    if np.sum(detergent_membership) == 0:
+        detergent_membership = detergent_medium.copy()
 
 
     spin_membership = np.maximum.reduce([
