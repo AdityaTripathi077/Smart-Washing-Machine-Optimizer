@@ -35,14 +35,15 @@ def aggregate_rules(activations, output_sets):
         )
 
     return combined
-
-
+    
 def centroid_defuzzify(x, membership):
     """Convert a fuzzy output into a crisp value."""
     total = np.sum(membership)
 
     if total == 0:
-        raise ValueError("Cannot defuzzify an empty membership function")
+        raise ValueError(
+            "Empty fuzzy output: check rule activation and membership functions."
+        )
 
     return float(np.sum(x * membership) / total)
 
