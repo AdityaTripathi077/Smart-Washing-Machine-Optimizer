@@ -149,6 +149,19 @@ def washing_controller(dirt_score, load_kg, fabric_type,
         np.minimum(time_normal_strength, time_normal),
         np.minimum(time_long_strength, time_long)
     ])
+    # After time_membership is calculated
+    if np.sum(time_membership) == 0:
+        time_membership = time_normal.copy()
+    # After water_membership is calculated
+    if np.sum(water_membership) == 0:
+        water_membership = water_usage_medium.copy()
+    # After detergent_membership is calculated
+    if np.sum(detergent_membership) == 0:
+        detergent_membership = detergent_medium.copy()
+    # After spin_membership is calculated
+    if np.sum(spin_membership) == 0:
+        spin_membership = spin_medium.copy()
+
 
     water_membership = np.maximum.reduce([
         np.minimum(water_low_strength, water_usage_low),
