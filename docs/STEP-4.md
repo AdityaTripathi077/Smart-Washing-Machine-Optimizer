@@ -86,10 +86,10 @@ Change one parameter at a time and re-run `python src/compare_controllers.py` to
 - The energy index is a proxy. It must not be called an energy saving.
 - The fuzzy rules are still initial design choices.
 
-## 11. Member contributions (edit so it matches who actually did the work)
+## 11. Member contributions
 | Member | Contribution |
 |---|---|
-| Aditya Tripathi | |
-| Ajay Gangwar | |
-| Nitin Kumar | |
-| Priyanshu Rajput | |
+| Aditya Tripathi | Wrote the baseline vs fuzzy comparison script, the executed notebook, and the Step 4 result files and charts. Ran the comparison on the 10,000 scenarios. |
+| Ajay Gangwar | Reviewed the comparison results and README with the team. Could not access GitHub during Step 4, so his work was shared with the team and uploaded by teammates. His own commits will be added once his login is fixed. |
+| Nitin Kumar | Wrote the Step 4 documentation (`docs/STEP-4.md`), added the fuzzy consistency test, uploaded the README and requirements files, and opened the pull request. |
+| Priyanshu Rajput | Fixed the fuzzy controller module so it matches the accepted Step 3 report (7 of 7 cases) and uploaded the corrected `fuzzy_controller.py`. |
