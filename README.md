@@ -42,10 +42,30 @@ Use a Genetic Algorithm to balance washing quality with resource usage and deplo
 ## Repository Structure
 
 ```text
-docs/
-data/
-src/
-notebooks/
-app/
-results/
-report/
+docs/        project documents (Step 1 contract, Step 3 baseline and fuzzy rules, Step 4 evaluation)
+data/        data dictionary, sample and invalid inputs, raw and processed scenarios, reports
+src/         Python code
+tests/       repeatable checks
+notebooks/   executed notebooks
+results/     charts, comparison tables, run outputs
+app/         Product V1 (later step)
+report/      final report (later)
+```
+
+## How to Reproduce the Results
+
+Run these from the project root.
+
+```text
+pip install -r requirements.txt
+
+# Step 2: generate the 10,000 scenarios (random seed 42, fixed in src/generate_scenarios.py)
+python src/generate_scenarios.py        # writes data/raw/scenarios.csv
+python src/prepare_data.py              # validates and writes data/processed/scenarios.csv
+
+# Step 3 / 4: check the fuzzy controller and compare it with the baseline
+python tests/test_fuzzy_matches_report.py
+python src/compare_controllers.py       # writes results/step4_*.csv and *.png
+```
+
+The generator uses `random.seed(42)`, so every run produces the same 10,000 rows. The scenario data is simulated, not measured. Machine capacity (8 kg) is based on the LG T80VBSF1Z; other ranges and presets are team assumptions (see `data/README.md`).
