@@ -1,96 +1,95 @@
+# Step 4: Baseline vs Fuzzy Comparison on the Prepared Scenarios
 
-# Step 4 - Fair Baseline Comparison
+## 1. Comparison question
+On the same 10,000 prepared wash scenarios, does the initial fuzzy controller use less water, wash time, detergent, and a relative energy index than the fixed-preset baseline, and does it meet the assumed cleaning requirements more often?
 
-## Team and Project
-- Project: Smart Washing Machine Optimizer
-- Team: Smart Spin
-- Step 4 branch: step-4-baseline
+## 2. Baseline rule
+The baseline is the fixed lookup table from Step 3 (`src/baseline.py`, `docs/STEP-3-BASELINE.md`): one preset per fabric type. It ignores `dirt_score` and `water_availability_pct` by design. It is a fair starting point because it is simple, uses no soft computing, and is similar to a real machine's fixed programmes. It is not a final product.
 
-## Question
-Does the initial Mamdani fuzzy controller produce different washing recommendations from the fixed-preset baseline when both methods receive the same 10,000 valid scenarios?
+## 3. Same inputs, no tuning on test data
+Both controllers read every row of `data/processed/scenarios.csv` (10,000 simulated scenarios, generated with seed 42). Nothing in either controller is random or fitted to this data, so no train/test split and no seed are needed for the comparison. Rules were not tuned in this step.
 
-## Data and Scenarios
-The comparison will use the prepared synthetic dataset at `data/processed/scenarios.csv`.
-The dataset contains 10,000 generated scenarios with a fixed random seed.
-The same valid input scenarios will be evaluated by both methods.
+Run it with:
+```text
+python src/compare_controllers.py
+```
+Terminal output is saved in `results/step4_run_output.txt`. The same steps are shown, with outputs, in the executed notebook `notebooks/03_baseline_comparison.ipynb`.
 
-## Baseline Rule
-The baseline selects fixed washing settings according to fabric type:
-- Delicate: 30 minutes, 40 litres, 30 ml detergent, 600 RPM
-- Cotton: 45 minutes, 60 litres, 50 ml detergent, 1000 RPM
-- Synthetic: 35 minutes, 50 litres, 40 ml detergent, 800 RPM
-- Heavy: 60 minutes, 75 litres, 60 ml detergent, 1200 RPM
+Scenario categories use the rules in `data/reports/data_quality_report.md`. The recomputed counts match that report: normal 3,274, boundary 3,461, stress 3,265.
 
-These are team-defined reference presets, not manufacturer recommendations.
+## 4. Fuzzy version evaluated
+The comparison uses `src/fuzzy_controller.py` as provided in this step. It reproduces the seven values in the accepted Step 3 report (`tests/test_fuzzy_matches_report.py`, 7 of 7 match). The earlier module committed on 12 Oct produced 0 of 7 matches, so it was replaced. A later attempt to add fallback values for empty fuzzy outputs was not kept: it silently replaces a missing result with a default, which hides the rule gap. Such scenarios are reported and excluded instead (section 5).
 
-## Measures
-Compare both methods using:
-- Wash time (minutes)
-- Water usage (litres)
-- Detergent amount (ml)
-- Spin speed (RPM)
+## 5. Scenarios where the fuzzy controller gave no output
+The fuzzy controller returned no recommendation ("no fuzzy rule fired") for 3 of 10,000 valid scenarios: SC02-01166, SC02-01197, SC02-06352 (see `results/step4_fuzzy_failures.csv`). They are excluded, so **9,997 scenarios** are compared. This is a rule-coverage gap, not an input error.
 
-Report mean and total values where appropriate, and break down results by normal, boundary, and stress scenarios.
+## 6. Measures and assumptions
+Water, time, detergent, and spin come straight from the controllers. The rest are **team-defined assumptions, not manufacturer data**, and are listed at the top of `src/compare_controllers.py`.
 
-Energy savings will not be claimed unless a defensible energy measure is defined.
+| Measure | Definition (assumption) |
+|---|---|
+| Relative energy index | `0.5 x wash_time/90 + 0.5 x water/100`. Unitless, not kWh. Time weights 0.3 and 0.7 were also tried. |
+| Water over available | Water > `water_availability_pct` x 100 L / 100 |
+| Time / detergent / water short | Below an assumed minimum: time `20 + 3 x dirt` min, detergent `15 + 3 x dirt + 4 x load` ml, water `5 x load` L |
+| Under-cleaned | Any one of the three shortfalls |
+| Delicate spin unsafe | Delicate fabric with spin above 800 rpm |
 
-## Fair-Comparison Checks
-- Both methods receive the same input scenarios.
-- Both methods use the same valid dataset rows.
-- Invalid inputs are excluded from valid-scenario performance summaries and tested separately.
-- Step 3 code, notebook, and reports remain unchanged.
+**The shortfall results depend on the assumed minimums.** They need review before they are quoted as evidence.
 
-## Results
-Results will be added after the comparison script runs successfully.
-No improvement is claimed before evaluating the actual results.
-The baseline and fuzzy controller were evaluated on the same 10,000 synthetic scenarios.
+## 7. Results (9,997 scenarios)
+| Measure | Baseline mean | Fuzzy mean | Difference | Fuzzy lower in |
+|---|---:|---:|---:|---:|
+| Wash time (min) | 42.48 | 54.78 | +29.0% | 22.7% of scenarios |
+| Water (L) | 56.23 | 57.45 | +2.2% | 46.2% |
+| Detergent (ml) | 44.97 | 54.48 | +21.1% | 27.8% |
+| Spin (rpm) | 899 | 983 | +9.2% | 25.1% |
+| Energy index | 0.52 | 0.59 | +14.4% | 30.5% |
 
-| Metric | Baseline Mean | Fuzzy Mean | Mean Difference |
-|---|---:|---:|---:|
-| Wash time (min) | 42.48 | 55.88 | +13.40 |
-| Water usage (litres) | 56.22 | 60.00 | +3.77 |
-| Detergent (ml) | 44.97 | 51.04 | +6.07 |
-| Spin speed (RPM) | 899.42 | 918.55 | +19.13 |
+The energy result stays higher for the fuzzy controller at every time weight tried (+9.3% to +19.9%).
 
-The fuzzy controller produced higher average wash time, water usage, detergent usage, and spin speed than the fixed-preset baseline. Therefore, these results do not demonstrate resource savings.
+By category, mean water is +2.1% (normal), 0.0% (boundary), and +4.6% (stress). Mean detergent is +19% to +26% in all three. By fabric, fuzzy uses less water and time than baseline for heavy loads (water -23.9%, time -8.4%) but much more for delicate (water +43.5%, time +82.6%, detergent +81.7%).
 
-## Interpretation
+| Check (% of scenarios) | Baseline | Fuzzy |
+|---|---:|---:|
+| Under-cleaned (any shortfall) | 56.97 | 23.48 |
+| Detergent short | 55.12 | 23.46 |
+| Time short | 33.64 | 0.00 |
+| Water short | 0.00 | 0.49 |
+| Water over available | 55.39 | 59.57 |
+| Delicate spin unsafe | 0.00 | 0.00 |
 
-The current fuzzy controller takes approximately 13.40 additional minutes per scenario on average, uses 3.77 additional litres of water, and uses 6.07 additional ml of detergent compared with the baseline.
+Under-cleaned by category (baseline / fuzzy): normal 45.0 / 2.1, boundary 56.3 / 27.6, stress 69.7 / 40.6.
 
-These differences indicate that the current rules and membership functions require further tuning. Higher spin speed alone does not demonstrate better cleaning performance.
+Charts: `results/step4_resources_by_category.png`, `results/step4_water_diagnostics.png`, `results/step4_requirement_checks.png`. Full per-scenario data: `results/step4_comparison_full.csv`. Summaries: `results/step4_summary.csv`, `results/step4_rates.csv`.
 
-## Limitations
+## 8. Interpretation
+- **No resource savings are demonstrated.** On average the fuzzy controller uses slightly more water and clearly more time, detergent, and energy index.
+- **The fuzzy controller adapts to dirt.** Its detergent and time correlate strongly with dirt score (0.93 and 0.83), which the baseline cannot do. Under the assumed minimums it falls short much less often (23% vs 57%). This is a trade-off: more resources for fewer shortfalls, and it depends on the assumptions in section 6.
+- **Water is the main weakness.** Fuzzy water follows load (correlation 0.57) and availability (0.65) but not dirt (0.01), and it never goes below 33 L, even at 0% availability. When availability is 25% or less (2,606 scenarios), 100% of scenarios exceed the available water for both controllers.
+- **Delicate spin** is fixed at 565 rpm for every delicate scenario. It is safe, but it does not vary with the load.
 
-- The dataset contains synthetic scenarios and does not establish real-world washing performance.
-- The baseline uses fixed settings based on fabric type.
-- The fuzzy controller uses preliminary rules and temporary fallback behaviour when no output membership is activated.
-- Cleaning quality was not measured against an independent target.
-- Energy consumption was not modelled; no energy-saving claim is made.
-- Results should be reproduced after the fuzzy rules are improved.
+## 9. Rule parameters to tune (Step 4 follow-up)
+| # | Parameter | Evidence | Idea to test |
+|---|---|---|---|
+| 1 | Water output universe floor (20 L) and low-water set | Fuzzy water never below 33 L | Lower the floor or move the low set, then re-run |
+| 2 | Water rules use only availability and load | Correlation with dirt is 0.01 | Add dirt and fabric to the water rules; cap water at availability |
+| 3 | Rule coverage (medium load with high availability, near-zero dirt) | 3 scenarios give no output | Add rules for the missing combinations, or a fallback |
+| 4 | Time and detergent rules for delicate fabric | Delicate time +82.6%, detergent +81.7% | Add a fabric term so delicate loads stay short and gentle |
+| 5 | Time output sets | Mean time +29% | Check the breakpoints of short, normal, and long |
+| 6 | Spin sets for cotton and heavy | Cotton 1235 rpm vs 1000 baseline | Review the spin breakpoints |
+| 7 | Assumed cleaning minimums | Drive the shortfall results | Confirm or replace with a sourced cleaning target |
 
-## Next Tuning Priorities
+Change one parameter at a time and re-run `python src/compare_controllers.py` to see its effect.
 
-1. Review wash-time rules and membership functions.
-2. Review water-use rules so recommendations account meaningfully for water availability.
-3. Review detergent rules to avoid excessive outputs.
-4. Validate delicate-fabric spin recommendations.
-5. Rerun the same 10,000 scenarios after any controller changes and compare results fairly.
+## 10. Limitations
+- All scenarios are simulated, not measured. Preset values, cleaning minimums, and the energy index are team assumptions.
+- The energy index is a proxy. It must not be called an energy saving.
+- The fuzzy rules are still initial design choices.
 
-## Interpretation
-To be completed using measured results, including where the fuzzy controller differs from or performs worse than the baseline.
-
-## Limitations and Responsible Use
-The dataset is synthetic. Results demonstrate behaviour on simulated scenarios and do not establish real-world cleaning effectiveness or energy savings.
-
-## Reproducibility and Evidence
-- Dataset: `data/processed/scenarios.csv`
-- Baseline implementation: `src/baseline.py`
-- Fuzzy controller: `src/fuzzy_controller.py`
-- Comparison code and outputs: to be added in Step 4.
-
-## Team Contributions
-- Aditya: fuzzy controller integration and comparison.
-- Priyanshu: baseline review.
-- Nitin: fuzzy-rule review.
-- Ajay: comparison chart.
+## 11. Member contributions (edit so it matches who actually did the work)
+| Member | Contribution |
+|---|---|
+| Aditya Tripathi | |
+| Ajay Gangwar | |
+| Nitin Kumar | |
+| Priyanshu Rajput | |
