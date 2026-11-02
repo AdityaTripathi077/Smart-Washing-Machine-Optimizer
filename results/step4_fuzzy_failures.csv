@@ -1,0 +1,4 @@
+scenario_id,dirt_score,load_kg,fabric_type,water_availability_pct,category,fuzzy_error
+SC02-01166,1.77,4.25,synthetic,100,boundary,No fuzzy rule fired; cannot defuzzify.
+SC02-01197,0.0,6.62,cotton,44,boundary,No fuzzy rule fired; cannot defuzzify.
+SC02-06352,0.0,6.45,synthetic,93,boundary,No fuzzy rule fired; cannot defuzzify.
