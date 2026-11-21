@@ -62,6 +62,16 @@ The Mamdani fuzzy controller will use washing conditions to produce adaptive was
 9. IF fabric is Synthetic THEN spin speed is Medium.
 10. IF fabric is Heavy AND dirt is High THEN wash time is Long.
 
+### Revision after Step 4 (rule gaps and limited water)
+
+11. IF dirt is Low AND load is Medium THEN wash time is Short.
+12. IF dirt is Low AND load is Large THEN wash time is Normal.
+13. IF water availability is High AND load is Medium THEN water usage is Medium.
+
+Rules 11 to 13 close input combinations where no rule fired (3 of the 10,000 scenarios gave no output). They are used by default (`complete_rules=True`); the original rule base is still available with `complete_rules=False`.
+
+Water limit: after defuzzification the recommended water is capped at the assumed supply, `water_availability_pct x 100 L / 100` (`limit_water=True`), and the result reports `water_limited`.
+
 ## 5. Inference Method
 
 The controller will use Mamdani inference with fuzzy rule evaluation, aggregation of rule outputs, and defuzzification.
