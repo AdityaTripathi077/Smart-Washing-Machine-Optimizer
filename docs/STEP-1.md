@@ -47,6 +47,22 @@ The baseline will include presets for:
 
 If the load is above the washing machine capacity, the system will show an error instead of giving washing settings.
 
+
+### Inputs the baseline does not use
+
+The baseline picks one fixed preset from `fabric_type` only. It deliberately ignores `dirt_score`, `load_kg` and `water_availability_pct`, because a fixed-programme machine does not measure them. It still checks that all four inputs are valid. This makes it a fair, simple reference: the later fuzzy controller is the method that adapts to dirt, load and water, and the comparison shows what that adaptation gains or costs.
+
+### Reproducing the validation checks
+
+Run from the project root:
+
+```text
+python src/validate_data.py                         # checks data/sample_input.csv -> PASS
+python src/validate_data.py data/invalid_input.csv  # checks the invalid row -> FAIL, lists every error, exit code 1
+```
+
+`data/invalid_input.csv` holds two rows that must be rejected: INVALID-001 (dirt 11, load 9 kg, fabric "unknown", water 110%) and SC02-005 (8.5 kg, over the 8 kg capacity), which is mandatory test case 5. They are kept out of `data/sample_input.csv`, which has 20 valid rows. The saved screenshots are `results/step1/Pass.png` and `results/step1/Fail.png`.
+
 ## Soft Computing Method for M1
 
 A Fuzzy Logic washing controller will be developed and compared with fixed washing presets.
@@ -80,9 +96,9 @@ The screen will contain:
 - Baseline result
 - Future Soft Computing result
 
-The screen sketch will be added to:
+The screen sketch is saved at `docs/Sketch.jpeg`:
 
-`docs/product-v1-sketch.png`
+![Product V1 screen sketch](Sketch.jpeg)
 
 ## Risks and Assumptions
 
@@ -93,7 +109,7 @@ The screen sketch will be added to:
 
 ## Step 1 Completion Evidence
 
-The following evidence will be added as Step 1 is completed:
+Step 1 evidence in this repository:
 
 - Repository and collaborator setup
 - Sample data
