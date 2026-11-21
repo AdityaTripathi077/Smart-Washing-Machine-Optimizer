@@ -68,3 +68,19 @@ A larger dataset of 10,000+ scenarios is generated in Step 2 using reproducible 
 
 The Step 2 dataset is generated using Python with a fixed random seed.
 The generator creates 10,000 valid washing scenarios using the documented input ranges.
+
+### How to regenerate (command and seed)
+
+```text
+python src/generate_scenarios.py   # seed 42 (random.seed(42) in the script); writes data/raw/scenarios.csv
+python src/prepare_data.py         # writes data/processed/scenarios.csv
+```
+
+The seed is fixed in `src/generate_scenarios.py`, so every run produces the same 10,000 rows.
+
+### Invalid scenarios are kept separately
+
+Invalid inputs are never mixed into the valid dataset:
+- `data/invalid_input.csv` holds the hand-written invalid test rows: INVALID-001 (every input out of range) and SC02-005 (8.5 kg load, over the 8 kg machine capacity; mandatory test case 5). SC02-005 was moved here from the sample so `data/sample_input.csv` contains only valid rows. The generator and `prepare_data.py` never overwrite it.
+- If any generated row is out of range, `prepare_data.py` moves it to `data/processed/rejected_scenarios.csv` instead of dropping it silently. The current file is empty (header only) because all 10,000 generated rows are valid.
+- Reproduce the invalid check with `python src/validate_data.py data/invalid_input.csv` (expected result: FAIL).
