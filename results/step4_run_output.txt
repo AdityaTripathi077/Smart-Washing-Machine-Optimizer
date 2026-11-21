@@ -1,39 +1,48 @@
 STEP 4: BASELINE VS FUZZY ON THE SAME SCENARIOS
 ============================================================
 Scenarios read: 10000 | categories (all): {'boundary': 3461, 'normal': 3274, 'stress': 3265}
-Compared (both controllers gave an output): 9997
-Fuzzy produced NO output (no rule fired): 3 -> ['SC02-01166', 'SC02-01197', 'SC02-06352']
+Compared (both controllers gave an output): 10000
+Fuzzy produced NO output (no rule fired): 0 -> []
+Fuzzy water capped at the supply: 5956 scenarios (59.56%)
 
 OVERALL MEANS
       measure  baseline_mean  fuzzy_mean  percent_difference  pct_scenarios_fuzzy_lower
-wash_time_min          42.48       54.78               28.96                      22.67
-  water_litre          56.23       57.45                2.17                      46.18
- detergent_ml          44.97       54.48               21.13                      27.81
-     spin_rpm         899.43      982.50                9.24                      25.14
- energy_index           0.52        0.59               14.40                      30.54
+wash_time_min          42.48       53.57               26.09                      24.42
+  water_litre          56.22       42.21              -24.92                      66.78
+ detergent_ml          44.97       54.47               21.12                      27.82
+     spin_rpm         899.42      982.51                9.24                      25.13
+ energy_index           0.52        0.51               -1.64                      49.93
 
 MEANS BY CATEGORY (water, detergent, time)
    group       measure  baseline_mean  fuzzy_mean  percent_difference
-  normal wash_time_min          42.39       52.49               23.84
-  normal   water_litre          56.11       57.30                2.12
+  normal wash_time_min          42.39       51.33               21.10
+  normal   water_litre          56.11       50.58               -9.85
   normal  detergent_ml          44.85       53.48               19.24
-boundary wash_time_min          42.59       56.40               32.42
-boundary   water_litre          56.39       56.38               -0.02
-boundary  detergent_ml          45.14       53.64               18.82
-  stress wash_time_min          42.46       55.37               30.41
-  stress   water_litre          56.17       58.73                4.56
+boundary wash_time_min          42.59       54.70               28.43
+boundary   water_litre          56.39       40.03              -29.02
+boundary  detergent_ml          45.14       53.62               18.78
+  stress wash_time_min          42.46       54.61               28.61
+  stress   water_litre          56.17       36.14              -35.67
   stress  detergent_ml          44.91       56.36               25.50
 
 REQUIREMENT / FEASIBILITY CHECKS (overall, % of scenarios)
-                flag  scenarios  baseline_pct  fuzzy_pct
-water_over_available       9997         55.39      59.57
-          time_short       9997         33.64       0.00
-     detergent_short       9997         55.12      23.46
-         water_short       9997          0.00       0.49
-       under_cleaned       9997         56.97      23.48
-delicate_spin_unsafe       2513          0.00       0.00
+                    flag  scenarios  baseline_pct  fuzzy_pct
+    water_over_available      10000         55.38       0.00
+           water_limited      10000          0.00      59.56
+supply_below_requirement      10000         22.25      22.25
+              time_short      10000         33.63       0.00
+         detergent_short      10000         55.11      23.47
+             water_short      10000          0.00      22.25
+           under_cleaned      10000         56.96      37.40
+    delicate_spin_unsafe       2513          0.00       0.00
+
+CLEANING-TARGET SENSITIVITY (assumed minimums x scale; % under-cleaned)
+ requirement_scale  baseline_under_cleaned_pct  fuzzy_under_cleaned_pct  fuzzy_under_cleaned_excluding_supply_limit_pct
+               0.8                       33.99                    19.70                                            1.62
+               1.0                       56.96                    37.40                                           15.15
+               1.2                       73.62                    61.08                                           34.97
 
 ENERGY INDEX SENSITIVITY (time weight): baseline, fuzzy, % change
-  w_time=0.3: 0.535 -> 0.585 (+9.3%)
-  w_time=0.5: 0.517 -> 0.592 (+14.4%)
-  w_time=0.7: 0.499 -> 0.598 (+19.9%)
+  w_time=0.3: 0.535 -> 0.474 (-11.4%)
+  w_time=0.5: 0.517 -> 0.509 (-1.6%)
+  w_time=0.7: 0.499 -> 0.543 (+8.9%)
