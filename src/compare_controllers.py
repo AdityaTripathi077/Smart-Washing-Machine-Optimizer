@@ -7,6 +7,7 @@ Run from the project root:
     python src/compare_controllers.py
 
 Writes (all in results/):
+    step4_requirement_sensitivity.csv  under-cleaned % if the assumed minimums are +/-20 %
     step4_comparison_full.csv        one row per scenario, both controllers, flags
     step4_summary.csv                means, differences, % of scenarios where fuzzy is lower
     step4_rates.csv                  shortfall / feasibility rates per group
@@ -24,19 +25,26 @@ import numpy as np
 import pandas as pd
 
 from baseline import baseline_controller
-from fuzzy_controller import washing_controller
+from fuzzy_controller import AVAILABLE_WATER_AT_100_PCT, washing_controller
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = ROOT / "data" / "processed" / "scenarios.csv"
 RESULTS = ROOT / "results"
 
 # ------------------------------------------------------------------ ASSUMPTIONS
-AVAILABLE_WATER_AT_100_PCT = 100.0   # litres supplied when water_availability_pct = 100
+# AVAILABLE_WATER_AT_100_PCT (litres supplied at 100 % availability) is imported from
+# fuzzy_controller so the controller's water cap and this check use the same assumption.
 DELICATE_MAX_SAFE_SPIN_RPM = 800     # delicate spin above this is treated as unsafe
 # Assumed MINIMUM resources needed for an acceptable wash ("cleaning target"):
-REQ_TIME_MIN = lambda dirt, load: 20 + 3 * dirt          # minutes
-REQ_DETERGENT_ML = lambda dirt, load: 15 + 3 * dirt + 4 * load   # ml
-REQ_WATER_L = lambda dirt, load: 5 * load                # litres
+# Why these forms (they are modelling choices, not measured data - see docs/STEP-4.md section 6):
+#   time      20 min base (fill, agitate, rinse) + 3 min for every dirt-score point
+#   detergent 15 ml base + 3 ml per dirt point + 4 ml per kg of load (more dirt / more load -> more)
+#   water     5 L per kg of load (enough to wet and rinse the load)
+# REQUIREMENT_SCALE tests how much the conclusions depend on them (see requirement_sensitivity).
+REQUIREMENT_SCALE = 1.0
+REQ_TIME_MIN = lambda dirt, load, k=1.0: k * (20 + 3 * dirt)          # minutes
+REQ_DETERGENT_ML = lambda dirt, load, k=1.0: k * (15 + 3 * dirt + 4 * load)   # ml
+REQ_WATER_L = lambda dirt, load, k=1.0: k * 5 * load                # litres
 # Relative energy index: unitless proxy (NOT kWh). Motor use ~ wash time, heating ~ water.
 ENERGY_W_TIME = 0.5                  # weight of wash time (weight of water = 1 - this)
 # --------------------------------------------------------------------------------
@@ -79,6 +87,8 @@ def run_controllers(df):
         for tag, out in (("baseline", b), ("fuzzy", f)):
             for m in ("wash_time_min", "water_litre", "detergent_ml", "spin_rpm"):
                 row[f"{tag}_{m}"] = out[m]
+        row["baseline_water_limited"] = False       # fixed presets never adapt to the supply
+        row["fuzzy_water_limited"] = bool(f["water_limited"])
         rows.append(row)
     out = pd.DataFrame(rows)
     for tag in ("baseline", "fuzzy"):
@@ -87,12 +97,16 @@ def run_controllers(df):
 
 
 def add_flags(df):
-    avail = df["water_availability_pct"] / 100 * AVAILABLE_WATER_AT_100_PCT
+    avail = df["water_availability_pct"] * AVAILABLE_WATER_AT_100_PCT / 100
     req_t = REQ_TIME_MIN(df.dirt_score, df.load_kg)
     req_d = REQ_DETERGENT_ML(df.dirt_score, df.load_kg)
     req_w = REQ_WATER_L(df.dirt_score, df.load_kg)
+    # Supply smaller than the assumed water requirement: no controller can meet both limits.
+    df["supply_below_requirement"] = avail < req_w
+    df["baseline_supply_below_requirement"] = df["supply_below_requirement"]
+    df["fuzzy_supply_below_requirement"] = df["supply_below_requirement"]
     for tag in ("baseline", "fuzzy"):
-        df[f"{tag}_water_over_available"] = df[f"{tag}_water_litre"] > avail
+        df[f"{tag}_water_over_available"] = df[f"{tag}_water_litre"] > avail + 1e-6
         df[f"{tag}_time_short"] = df[f"{tag}_wash_time_min"] < req_t
         df[f"{tag}_detergent_short"] = df[f"{tag}_detergent_ml"] < req_d
         df[f"{tag}_water_short"] = df[f"{tag}_water_litre"] < req_w
@@ -126,8 +140,8 @@ def summarize(df):
 
 
 def rates(df):
-    flags = ["water_over_available", "time_short", "detergent_short", "water_short",
-             "under_cleaned", "delicate_spin_unsafe"]
+    flags = ["water_over_available", "water_limited", "supply_below_requirement", "time_short",
+             "detergent_short", "water_short", "under_cleaned", "delicate_spin_unsafe"]
     rows = []
     for gtype, gval, g in groups(df):
         for fl in flags:
@@ -140,6 +154,26 @@ def rates(df):
             rows.append({"group_type": gtype, "group": gval, "flag": fl, "scenarios": len(g_use),
                          "baseline_pct": 100 * g_use[f"baseline_{fl}"].mean(),
                          "fuzzy_pct": 100 * g_use[f"fuzzy_{fl}"].mean()})
+    return pd.DataFrame(rows).round(2)
+
+
+def requirement_sensitivity(df):
+    """Re-count under-cleaned scenarios with the assumed minimums scaled up/down.
+    Shows whether the baseline-vs-fuzzy conclusion depends on the exact assumed numbers."""
+    avail = df["water_availability_pct"] * AVAILABLE_WATER_AT_100_PCT / 100
+    rows = []
+    for k in (0.8, 1.0, 1.2):
+        row = {"requirement_scale": k}
+        for tag in ("baseline", "fuzzy"):
+            short = ((df[f"{tag}_wash_time_min"] < REQ_TIME_MIN(df.dirt_score, df.load_kg, k))
+                     | (df[f"{tag}_detergent_ml"] < REQ_DETERGENT_ML(df.dirt_score, df.load_kg, k))
+                     | (df[f"{tag}_water_litre"] < REQ_WATER_L(df.dirt_score, df.load_kg, k)))
+            row[f"{tag}_under_cleaned_pct"] = 100 * short.mean()
+            if tag == "fuzzy":
+                # shortfalls that are not caused by a too-small water supply
+                row["fuzzy_under_cleaned_excluding_supply_limit_pct"] = 100 * (
+                    short & ~(avail < REQ_WATER_L(df.dirt_score, df.load_kg, k))).mean()
+        rows.append(row)
     return pd.DataFrame(rows).round(2)
 
 
@@ -206,6 +240,8 @@ def main():
     df.round(3).to_csv(RESULTS / "step4_comparison_full.csv", index=False)
     failed.to_csv(RESULTS / "step4_fuzzy_failures.csv", index=False)
     summary, rate_table = summarize(df), rates(df)
+    sens = requirement_sensitivity(df)
+    sens.to_csv(RESULTS / "step4_requirement_sensitivity.csv", index=False)
     summary.to_csv(RESULTS / "step4_summary.csv", index=False)
     rate_table.to_csv(RESULTS / "step4_rates.csv", index=False)
     charts(df, summary)
@@ -215,6 +251,8 @@ def main():
     print("Scenarios read:", len(scenarios), "| categories (all):", all_categories.to_dict())
     print("Compared (both controllers gave an output):", len(df))
     print("Fuzzy produced NO output (no rule fired):", len(failed), "->", results_ids(failed))
+    print("Fuzzy water capped at the supply:", int(df.fuzzy_water_limited.sum()), "scenarios",
+          f"({100 * df.fuzzy_water_limited.mean():.2f}%)")
     pd.set_option("display.width", 200)
     print("\nOVERALL MEANS")
     print(summary[summary.group_type == "overall"][
@@ -227,6 +265,8 @@ def main():
     print("\nREQUIREMENT / FEASIBILITY CHECKS (overall, % of scenarios)")
     print(rate_table[rate_table.group_type == "overall"][
         ["flag", "scenarios", "baseline_pct", "fuzzy_pct"]].to_string(index=False))
+    print("\nCLEANING-TARGET SENSITIVITY (assumed minimums x scale; % under-cleaned)")
+    print(sens.to_string(index=False))
     print("\nENERGY INDEX SENSITIVITY (time weight): baseline, fuzzy, % change")
     for w, b, f, p in energy_sensitivity(df):
         print(f"  w_time={w}: {b:.3f} -> {f:.3f} ({p:+.1f}%)")

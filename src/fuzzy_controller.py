@@ -15,6 +15,10 @@ import numpy as np
 
 FABRICS = ("delicate", "cotton", "synthetic", "heavy")
 
+# Assumed water supply (team assumption, not manufacturer data): the litres available
+# when water_availability_pct = 100. Used to cap the recommended water.
+AVAILABLE_WATER_AT_100_PCT = 100.0
+
 
 def triangular_mf(x, a, b, c):
     """Triangular membership function with optional shoulders (a == b or b == c)."""
@@ -99,8 +103,18 @@ def validate_inputs(dirt_score, load_kg, fabric_type, water_availability_pct):
         raise ValueError("Invalid fabric type.")
 
 
-def washing_controller(dirt_score, load_kg, fabric_type, water_availability_pct):
-    """Return fuzzy recommendations as a dict (wash time, water, detergent, spin)."""
+def washing_controller(dirt_score, load_kg, fabric_type, water_availability_pct,
+                       complete_rules=True, limit_water=True):
+    """Return fuzzy recommendations as a dict (wash time, water, detergent, spin).
+
+    complete_rules=True  adds the three rules that close the coverage gaps found in
+                         Step 4 (every valid input now fires at least one rule per output).
+                         False gives the original Step 3 rule base (reproduces the 7
+                         accepted Step 3 report cases; 3 valid scenarios have no output).
+    limit_water=True     caps the recommended water at the assumed supply
+                         (water_availability_pct * AVAILABLE_WATER_AT_100_PCT / 100 litres).
+                         The result also carries water_limited = True when the cap applied.
+    """
     validate_inputs(dirt_score, load_kg, fabric_type, water_availability_pct)
 
     # Fuzzify inputs
@@ -121,6 +135,12 @@ def washing_controller(dirt_score, load_kg, fabric_type, water_availability_pct)
     time_normal_s = dm
     time_long_s = max(dh, min(dh, ll))
 
+    if complete_rules:
+        # NEW (Step 4 revision) rule 11: IF dirt is Low AND load is Medium THEN wash time is Short.
+        time_short_s = max(time_short_s, min(dl, lm))
+        # NEW rule 12: IF dirt is Low AND load is Large THEN wash time is Normal.
+        time_normal_s = max(time_normal_s, min(dl, ll))
+
     # Rule strengths: detergent
     det_low_s = dl
     det_medium_s = max(dm, min(dh, ls))
@@ -130,6 +150,10 @@ def washing_controller(dirt_score, load_kg, fabric_type, water_availability_pct)
     water_low_s = max(wl, min(wm, ls))
     water_medium_s = max(min(wm, lm), min(wh, ls))
     water_high_s = max(min(wh, ll), min(wm, ll))
+
+    if complete_rules:
+        # NEW rule 13: IF water availability is High AND load is Medium THEN water usage is Medium.
+        water_medium_s = max(water_medium_s, min(wh, lm))
 
     # Fabric-based spin rules
     if fabric_type == "delicate":
@@ -147,11 +171,19 @@ def washing_controller(dirt_score, load_kg, fabric_type, water_availability_pct)
                         (DETERGENT_LOW, DETERGENT_MEDIUM, DETERGENT_HIGH))
     spin_mf = _aggregate(spin_s, (SPIN_LOW, SPIN_MEDIUM, SPIN_HIGH))
 
+    water = centroid_defuzzify(WATER_LITRES, water_mf)
+    water_limited = False
+    if limit_water:
+        available = water_availability_pct * AVAILABLE_WATER_AT_100_PCT / 100
+        if water > available:
+            water, water_limited = available, True
+
     return {
         "wash_time_min": round(centroid_defuzzify(WASH_TIME, time_mf), 2),
-        "water_litre": round(centroid_defuzzify(WATER_LITRES, water_mf), 2),
+        "water_litre": round(water, 2),
         "detergent_ml": round(centroid_defuzzify(DETERGENT, det_mf), 2),
         "spin_rpm": round(centroid_defuzzify(SPIN_RPM, spin_mf), 2),
+        "water_limited": water_limited,
     }
 
 
