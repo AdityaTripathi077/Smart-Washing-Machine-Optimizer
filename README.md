@@ -61,7 +61,11 @@ pip install -r requirements.txt
 
 # Step 2: generate the 10,000 scenarios (random seed 42, fixed in src/generate_scenarios.py)
 python src/generate_scenarios.py        # writes data/raw/scenarios.csv
-python src/prepare_data.py              # validates and writes data/processed/scenarios.csv
+python src/prepare_data.py              # writes data/processed/scenarios.csv; invalid rows go to data/processed/rejected_scenarios.csv
+
+# Step 1: validation (PASS on the sample, FAIL on the invalid test row)
+python src/validate_data.py
+python src/validate_data.py data/invalid_input.csv
 
 # Step 3 / 4: check the fuzzy controller and compare it with the baseline
 python tests/test_fuzzy_matches_report.py
