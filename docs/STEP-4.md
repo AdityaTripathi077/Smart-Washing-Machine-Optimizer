@@ -17,73 +17,100 @@ Terminal output is saved in `results/step4_run_output.txt`. The same steps are s
 
 Scenario categories use the rules in `data/reports/data_quality_report.md`. The recomputed counts match that report: normal 3,274, boundary 3,461, stress 3,265.
 
-## 4. Fuzzy version evaluated
-The comparison uses `src/fuzzy_controller.py` as provided in this step. It reproduces the seven values in the accepted Step 3 report (`tests/test_fuzzy_matches_report.py`, 7 of 7 match). The earlier module committed on 12 Oct produced 0 of 7 matches, so it was replaced. A later attempt to add fallback values for empty fuzzy outputs was not kept: it silently replaces a missing result with a default, which hides the rule gap. Such scenarios are reported and excluded instead (section 5).
+## 4. Fuzzy version evaluated (revised after Step 3 and Step 4 feedback)
+The comparison uses `src/fuzzy_controller.py` with two fixes, both switchable so the earlier behaviour can still be reproduced:
+
+1. **Rule gaps closed (`complete_rules=True`).** Three rules were added (rules 11 to 13 in `docs/STEP-3-FUZZY-RULES.md`): low dirt with medium load gives a short wash, low dirt with large load gives a normal wash, and high water availability with a medium load gives medium water. A scan of 106,764 valid inputs found 1,504 points with no output under the old rules and none under the new ones.
+2. **Limited water handled (`limit_water=True`).** The recommended water is capped at the assumed supply, `water_availability_pct x 100 L / 100`. The result carries `water_limited = True` when the cap applied.
+
+`python tests/test_fuzzy_matches_report.py` checks both versions: with the old settings the controller still matches the 7 accepted Step 3 report cases (7 of 7). With the revised settings 4 of those 7 are unchanged and 3 change on purpose (water in the cases at 20% and 0% availability, and rule 13 for the 7 kg heavy case at 100% availability: 86.06 L to 71.30 L). The three scenarios that used to fail now give an output, and no valid input on the test grid gives an empty result or more water than the supply.
+
+An earlier idea to replace a missing output with a default value was rejected, because it hides the rule gap. The gaps were fixed with rules instead.
 
 ## 5. Scenarios where the fuzzy controller gave no output
-The fuzzy controller returned no recommendation ("no fuzzy rule fired") for 3 of 10,000 valid scenarios: SC02-01166, SC02-01197, SC02-06352 (see `results/step4_fuzzy_failures.csv`). They are excluded, so **9,997 scenarios** are compared. This is a rule-coverage gap, not an input error.
+Before the fix, the fuzzy controller gave no recommendation for 3 of 10,000 valid scenarios: SC02-01166, SC02-01197 and SC02-06352 (the earlier run is kept in the Git history of `results/step4_fuzzy_failures.csv`). The cause was uncovered input combinations, not invalid data:
+- SC02-01197 and SC02-06352 have dirt 0 and a large load, so no wash-time rule fired.
+- SC02-01166 has a medium load (4.25 kg) with 100% water availability, so no water rule fired.
+
+After the fix, 0 scenarios fail and **all 10,000 are compared** (`results/step4_fuzzy_failures.csv` now has no rows).
 
 ## 6. Measures and assumptions
-Water, time, detergent, and spin come straight from the controllers. The rest are **team-defined assumptions, not manufacturer data**, and are listed at the top of `src/compare_controllers.py`.
+Water, time, detergent and spin come straight from the controllers. The rest are **team-defined assumptions, not manufacturer data**, listed at the top of `src/compare_controllers.py`.
 
-| Measure | Definition (assumption) |
-|---|---|
-| Relative energy index | `0.5 x wash_time/90 + 0.5 x water/100`. Unitless, not kWh. Time weights 0.3 and 0.7 were also tried. |
-| Water over available | Water > `water_availability_pct` x 100 L / 100 |
-| Time / detergent / water short | Below an assumed minimum: time `20 + 3 x dirt` min, detergent `15 + 3 x dirt + 4 x load` ml, water `5 x load` L |
-| Under-cleaned | Any one of the three shortfalls |
-| Delicate spin unsafe | Delicate fabric with spin above 800 rpm |
+| Measure | Definition (assumption) | Why this form |
+|---|---|---|
+| Available water | `water_availability_pct x 100 L / 100` | Simple proportional supply; 100 L at full availability |
+| Required wash time | `20 + 3 x dirt` min | A base time for fill, agitation and rinse, plus 3 min per dirt point |
+| Required detergent | `15 + 3 x dirt + 4 x load` ml | A base dose, more for dirtier and heavier loads |
+| Required water | `5 x load` L | Enough water to wet and rinse each kg |
+| Under-cleaned | Any one of time, detergent or water below its requirement | |
+| Supply below requirement | Available water < required water | No controller can meet both limits here |
+| Relative energy index | `0.5 x wash_time/90 + 0.5 x water/100`. Unitless proxy, not kWh and not measured electricity | |
+| Delicate spin unsafe | Delicate fabric with spin above 800 rpm | |
 
-**The shortfall results depend on the assumed minimums.** They need review before they are quoted as evidence.
+These cleaning targets are modelling choices that give a consistent yardstick, not measured or sourced values. To show how much the conclusions depend on them, the minimums were also scaled by 0.8 and 1.2 (section 7, `results/step4_requirement_sensitivity.csv`). The energy index is only a proxy for comparing the two controllers; it says nothing about real electricity use.
 
-## 7. Results (9,997 scenarios)
+## 7. Results (all 10,000 scenarios)
 | Measure | Baseline mean | Fuzzy mean | Difference | Fuzzy lower in |
 |---|---:|---:|---:|---:|
-| Wash time (min) | 42.48 | 54.78 | +29.0% | 22.7% of scenarios |
-| Water (L) | 56.23 | 57.45 | +2.2% | 46.2% |
-| Detergent (ml) | 44.97 | 54.48 | +21.1% | 27.8% |
+| Wash time (min) | 42.48 | 53.57 | +26.1% | 24.4% of scenarios |
+| Water (L) | 56.22 | 42.21 | -24.9% | 66.8% |
+| Detergent (ml) | 44.97 | 54.47 | +21.1% | 27.8% |
 | Spin (rpm) | 899 | 983 | +9.2% | 25.1% |
-| Energy index | 0.52 | 0.59 | +14.4% | 30.5% |
+| Energy index (proxy) | 0.52 | 0.51 | -1.6% | 49.9% |
 
-The energy result stays higher for the fuzzy controller at every time weight tried (+9.3% to +19.9%).
+**Most of the water difference comes from the supply cap, not from smarter rules.** The fuzzy water was capped in 59.56% of scenarios (5,956). The baseline ignores supply, so it is over the available water in 55.38% of scenarios while the fuzzy controller is over in 0.00%.
 
-By category, mean water is +2.1% (normal), 0.0% (boundary), and +4.6% (stress). Mean detergent is +19% to +26% in all three. By fabric, fuzzy uses less water and time than baseline for heavy loads (water -23.9%, time -8.4%) but much more for delicate (water +43.5%, time +82.6%, detergent +81.7%).
+The energy index is not a robust saving. At a time weight of 0.5 it is 1.6% lower, but it changes with the weight: -11.4% at 0.3 and +8.9% at 0.7.
+
+By category, fuzzy water is -9.9% (normal), -29.0% (boundary) and -35.7% (stress). Wash time is +21% to +29% and detergent +19% to +26% in all three. By fabric, fuzzy uses less time, water and detergent than the baseline for heavy loads (time -10.4%, water -44.6%, detergent -8.8%) but much more time and detergent for delicate loads (time +78.6%, detergent +81.7%).
 
 | Check (% of scenarios) | Baseline | Fuzzy |
 |---|---:|---:|
-| Under-cleaned (any shortfall) | 56.97 | 23.48 |
-| Detergent short | 55.12 | 23.46 |
-| Time short | 33.64 | 0.00 |
-| Water short | 0.00 | 0.49 |
-| Water over available | 55.39 | 59.57 |
+| Water over the available supply | 55.38 | 0.00 |
+| Water capped by the supply | n/a | 59.56 |
+| Supply below the required water (unavoidable) | 22.25 | 22.25 |
+| Time short | 33.63 | 0.00 |
+| Detergent short | 55.11 | 23.47 |
+| Water short | 0.00 | 22.25 |
+| Under-cleaned (any shortfall) | 56.96 | 37.40 |
 | Delicate spin unsafe | 0.00 | 0.00 |
 
-Under-cleaned by category (baseline / fuzzy): normal 45.0 / 2.1, boundary 56.3 / 27.6, stress 69.7 / 40.6.
+Sensitivity of the under-cleaned result to the assumed minimums (baseline / fuzzy):
 
-Charts: `results/step4_resources_by_category.png`, `results/step4_water_diagnostics.png`, `results/step4_requirement_checks.png`. Full per-scenario data: `results/step4_comparison_full.csv`. Summaries: `results/step4_summary.csv`, `results/step4_rates.csv`.
+| Minimums scaled by | Baseline | Fuzzy | Fuzzy, excluding shortfalls caused by too little supply |
+|---|---:|---:|---:|
+| 0.8 | 33.99 | 19.70 | 1.62 |
+| 1.0 | 56.96 | 37.40 | 15.15 |
+| 1.2 | 73.62 | 61.08 | 34.97 |
+
+The fuzzy controller is under-cleaned less often than the baseline at all three scales, so that conclusion does not depend on the exact assumed numbers. Heavy fabric is the exception: it is under-cleaned in 37.0% of fuzzy scenarios against 16.4% for the baseline, because the fuzzy controller gives heavy loads less time, water and detergent.
+
+Charts: `results/step4_resources_by_category.png`, `results/step4_water_diagnostics.png`, `results/step4_requirement_checks.png`. Full per-scenario data: `results/step4_comparison_full.csv`. Summaries: `results/step4_summary.csv`, `results/step4_rates.csv`, `results/step4_requirement_sensitivity.csv`.
 
 ## 8. Interpretation
-- **No resource savings are demonstrated.** On average the fuzzy controller uses slightly more water and clearly more time, detergent, and energy index.
-- **The fuzzy controller adapts to dirt.** Its detergent and time correlate strongly with dirt score (0.93 and 0.83), which the baseline cannot do. Under the assumed minimums it falls short much less often (23% vs 57%). This is a trade-off: more resources for fewer shortfalls, and it depends on the assumptions in section 6.
-- **Water is the main weakness.** Fuzzy water follows load (correlation 0.57) and availability (0.65) but not dirt (0.01), and it never goes below 33 L, even at 0% availability. When availability is 25% or less (2,606 scenarios), 100% of scenarios exceed the available water for both controllers.
-- **Delicate spin** is fixed at 565 rpm for every delicate scenario. It is safe, but it does not vary with the load.
+- **Resource savings are only partly shown.** The fuzzy controller uses less water on average, but mainly because the revised controller respects the water supply and the baseline does not. It uses more wash time (+26%) and detergent (+21%). The energy proxy is close to equal and its direction depends on the weight chosen. We do not claim an energy saving.
+- **The fuzzy controller adapts to dirt.** Its detergent and time follow the dirt score, which the baseline cannot do. Under the assumed minimums it falls short less often (37.4% vs 57.0%). This is a trade-off of more time and detergent for fewer shortfalls, and the size of the effect depends on the assumptions in section 6.
+- **Water is now handled but not optimised.** Fuzzy water follows water availability (correlation 0.94) and load (0.11) but not dirt (0.00). In 22.25% of scenarios the supply is below the assumed requirement; nothing can fix that, and the controller flags it through `water_limited`. When availability is 25% or less (2,606 scenarios) the water is always capped.
+- **Delicate fabric** gets a much longer and more detergent-heavy wash than the baseline (time +78.6%, detergent +81.7%), which needs tuning. Delicate spin is fixed at 565 rpm and always safe.
 
-## 9. Rule parameters to tune (Step 4 follow-up)
+## 9. Rule parameters to tune (next steps)
 | # | Parameter | Evidence | Idea to test |
 |---|---|---|---|
-| 1 | Water output universe floor (20 L) and low-water set | Fuzzy water never below 33 L | Lower the floor or move the low set, then re-run |
-| 2 | Water rules use only availability and load | Correlation with dirt is 0.01 | Add dirt and fabric to the water rules; cap water at availability |
-| 3 | Rule coverage (medium load with high availability, near-zero dirt) | 3 scenarios give no output | Add rules for the missing combinations, or a fallback |
-| 4 | Time and detergent rules for delicate fabric | Delicate time +82.6%, detergent +81.7% | Add a fabric term so delicate loads stay short and gentle |
-| 5 | Time output sets | Mean time +29% | Check the breakpoints of short, normal, and long |
+| 1 | Water rules use availability and load only | Correlation with dirt is 0.00 | Add dirt and fabric to the water rules |
+| 2 | Water output set (floor at 20 L) | Water is below the 20 L floor only through the cap | Lower the floor so the rules can ask for less water on easy loads |
+| 3 | Time and detergent rules for delicate fabric | Delicate time +78.6%, detergent +81.7% | Add a fabric term so delicate loads stay short and gentle |
+| 4 | Time output sets | Mean time +26% | Check the breakpoints of short, normal and long |
+| 5 | Heavy fabric rules | 37.0% under-cleaned vs 16.4% for the baseline | Make heavy loads use more time and detergent |
 | 6 | Spin sets for cotton and heavy | Cotton 1235 rpm vs 1000 baseline | Review the spin breakpoints |
-| 7 | Assumed cleaning minimums | Drive the shortfall results | Confirm or replace with a sourced cleaning target |
+| 7 | Assumed cleaning minimums and supply | Drive the shortfall and cap results | Confirm or replace with a sourced cleaning target |
 
 Change one parameter at a time and re-run `python src/compare_controllers.py` to see its effect.
 
 ## 10. Limitations
-- All scenarios are simulated, not measured. Preset values, cleaning minimums, and the energy index are team assumptions.
-- The energy index is a proxy. It must not be called an energy saving.
+- All scenarios are simulated, not measured. Preset values, the water supply, the cleaning minimums and the energy index are team assumptions.
+- The energy index is a proxy. It must not be called measured electricity or an energy saving.
+- Capping water at the supply keeps the controller feasible but can leave a wash under-cleaned when the supply is small; the controller flags this rather than solving it.
 - The fuzzy rules are still initial design choices.
 
 ## 11. Member contributions
