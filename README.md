@@ -69,6 +69,9 @@ python src/validate_data.py data/invalid_input.csv
 
 # Step 3 / 4: check the fuzzy controller and compare it with the baseline
 python tests/test_fuzzy_matches_report.py
+python tests/test_fuzzy_coverage.py            # no rule gaps; water never above the supply
+python tests/test_validation.py                # valid sample passes, every invalid fixture fails
+python tests/test_generation_reproducible.py   # seed 42 reproduces the data; invalid fixtures stay separate
 python src/compare_controllers.py       # writes results/step4_*.csv and *.png
 ```
 
