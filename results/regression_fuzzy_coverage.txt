@@ -1,0 +1,16 @@
+$ python tests/test_fuzzy_coverage.py
+OK    SC02-01166 gets a recommendation (44.58 min)
+OK    SC02-01197 gets a recommendation (50.02 min)
+OK    SC02-06352 gets a recommendation (49.38 min)
+OK    all 10000 scenarios produce a recommendation (no output: 0)
+OK    water never above the supply (over supply: 0)
+OK    no rule gaps on a dense input grid (26,000+ points) (gaps: 0)
+OK    10% supply: water capped at 10 L and flagged (10.0 L)
+OK    100% supply: not limited 
+OK    invalid input rejected: load over 8 kg 
+OK    invalid input rejected: dirt over 10 
+OK    invalid input rejected: unknown fabric 
+OK    invalid input rejected: water over 100 
+
+Result: all checks behaved as expected
+exit code 0

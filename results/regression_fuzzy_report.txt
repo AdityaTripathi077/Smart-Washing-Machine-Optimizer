@@ -1,0 +1,33 @@
+$ python tests/test_fuzzy_matches_report.py
+PART A: original Step 3 settings reproduce the Step 3 report
+OK    (2, 2.0, 'cotton', 100) got (45.76, 60.0, 46.95, 1235.0)
+OK    (5, 4.0, 'synthetic', 60) got (52.5, 59.89, 55.0, 900.0)
+OK    (9, 7.0, 'heavy', 100) got (65.63, 86.06, 70.72, 1235.0)
+OK    (5, 2.0, 'delicate', 80) got (52.5, 56.88, 55.0, 565.0)
+OK    (7, 5.0, 'cotton', 20) got (55.43, 53.95, 58.49, 1235.0)
+OK    (0, 0.5, 'delicate', 0) got (27.33, 33.17, 24.83, 565.0)
+OK    (10, 8.0, 'heavy', 100) got (77.67, 86.83, 85.17, 1235.0)
+
+PART B: Step 4 revision
+OK    regression (2, 2.0, 'cotton', 100) got (45.76, 60.0, 46.95, 1235.0)
+OK    regression (5, 4.0, 'synthetic', 60) got (52.5, 59.89, 55.0, 900.0)
+OK    regression (9, 7.0, 'heavy', 100) got (65.63, 71.3, 70.72, 1235.0)
+OK    regression (5, 2.0, 'delicate', 80) got (52.5, 56.88, 55.0, 565.0)
+OK    regression (7, 5.0, 'cotton', 20) got (55.43, 20.0, 58.49, 1235.0)
+OK    regression (0, 0.5, 'delicate', 0) got (27.33, 0.0, 24.83, 565.0)
+OK    regression (10, 8.0, 'heavy', 100) got (77.67, 86.83, 85.17, 1235.0)
+OK    former no-output case (1.77, 4.25, 'synthetic', 100) (44.58, 60.0, 45.53, 900.0)
+OK    former no-output case (0.0, 6.62, 'cotton', 44) (50.02, 44.0, 24.83, 1235.0)
+OK    former no-output case (0.0, 6.45, 'synthetic', 93) (49.38, 66.84, 24.83, 900.0)
+OK    no rule gaps on a grid of 54684 valid inputs 0 without output
+OK    water never above the supply on the same grid 0 above supply
+OK    low water (10%) is capped at 10 L and flagged {'wash_time_min': 52.5, 'water_litre': 10.0, 'detergent_ml': 55.0, 'spin_rpm': 1235.0, 'water_limited': True}
+OK    0% water gives 0 L and is flagged {'wash_time_min': 52.5, 'water_litre': 0.0, 'detergent_ml': 55.0, 'spin_rpm': 1235.0, 'water_limited': True}
+OK    plenty of water is not flagged {'wash_time_min': 45.76, 'water_litre': 60.0, 'detergent_ml': 46.95, 'spin_rpm': 1235.0, 'water_limited': False}
+OK    invalid input rejected (11, 4, 'cotton', 50) 
+OK    invalid input rejected (5, 9, 'cotton', 50) 
+OK    invalid input rejected (5, 4, 'unknown', 50) 
+OK    invalid input rejected (5, 4, 'cotton', 110) 
+
+Result: ALL TESTS PASSED
+exit code 0

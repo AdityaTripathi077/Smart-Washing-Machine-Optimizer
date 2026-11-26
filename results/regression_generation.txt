@@ -1,0 +1,9 @@
+$ python tests/test_generation_reproducible.py
+OK    regenerating with seed 42 reproduces data/raw/scenarios.csv exactly
+OK    regenerated data has 10,000 rows
+OK    regenerated data contains no invalid rows (ranges, categories, unique IDs, no blanks)
+OK    invalid fixtures are untouched by regeneration
+OK    no invalid scenario IDs in the valid dataset
+
+Result: all checks behaved as expected
+exit code 0

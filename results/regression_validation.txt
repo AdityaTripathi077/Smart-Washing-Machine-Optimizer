@@ -1,0 +1,13 @@
+$ python tests/test_validation.py
+OK   data/sample_input.csv: validator PASSED
+OK   data/invalid/over_capacity.csv: validator FAILED (expected)
+OK   data/invalid/load_too_small.csv: validator FAILED (expected)
+OK   data/invalid/dirt_out_of_range.csv: validator FAILED (expected)
+OK   data/invalid/water_out_of_range.csv: validator FAILED (expected)
+OK   data/invalid/unknown_fabric.csv: validator FAILED (expected)
+OK   data/invalid/missing_value.csv: validator FAILED (expected)
+OK   data/invalid/duplicate_id.csv: validator FAILED (expected)
+OK   data/invalid_input.csv: validator FAILED (expected)
+
+Result: 9/9 checks behaved as expected
+exit code 0

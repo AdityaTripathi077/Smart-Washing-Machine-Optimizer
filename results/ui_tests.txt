@@ -1,0 +1,16 @@
+$ python -m unittest -v tests.test_app_ui
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+test_missing_controller_is_explained_then_recovers (tests.test_app_ui.MissingControllerUITests.test_missing_controller_is_explained_then_recovers) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 10.209s
+
+OK
+exit code 0
