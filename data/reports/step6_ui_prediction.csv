@@ -1,0 +1,2 @@
+dirt_score,load_kg,water_availability_pct,fabric_type,baseline_wash_time_min,baseline_water_litre,baseline_detergent_ml,baseline_spin_rpm,fuzzy_wash_time_min,fuzzy_water_litre,fuzzy_detergent_ml,fuzzy_spin_rpm,water_supply_litre,fuzzy_water_limited,baseline_water_over_supply
+5.0,4.0,100.0,cotton,45,60,50,1000,52.5,60.0,55.0,1235.0,100.0,False,False
