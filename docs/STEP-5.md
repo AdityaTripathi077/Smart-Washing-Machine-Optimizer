@@ -95,7 +95,7 @@ Logs are saved in `results/step6/`.
 ## 10. Member contributions (fill in with what each person actually did)
 | Member | Contribution |
 |---|---|
-| Aditya Tripathi | |
-| Ajay Gangwar | |
-| Nitin Kumar | |
-| Priyanshu Rajput | |
+| Aditya Tripathi | Committed the app interface (app/app.py), ran the app in the browser, and took and uploaded the screenshots. |
+| Ajay Gangwar | Committed the Step 5 report (docs/STEP-5.md). |
+| Nitin Kumar | Committed the tests (tests/test_product_predict.py, tests/test_app_ui.py). |
+| Priyanshu Rajput | Committed the product logic and scripts (src/product_predict.py, src/check_product_prediction.py). |
