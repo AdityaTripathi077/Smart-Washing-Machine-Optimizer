@@ -75,7 +75,7 @@ A Genetic Algorithm will be used to balance washing quality with water, detergen
 
 The starter data will be created using the ranges and assumptions defined by the team.
 
-Sources and assumptions will be added here as the project develops.
+Sources: the 8 kg capacity is from the LG T80VBSF1Z page linked in data/README.md. All other values are team assumptions.
 
 ## Five Mandatory Test Cases
 
